@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Massa Plaza Shinta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: maket arsitek di atas meja gambar. Kanvas 3D memenuhi layar, panel kertas mengambang di kiri (skenario) dan kanan (angka). Satu tema terang, disengaja. */
+:root{
+  --paper:#e9edeb;      /* meja gambar */
+  --card:#f8faf9;       /* kertas panel */
+  --ink:#1b282d;        /* teks utama */
+  --muted:#5d6b70;      /* teks sekunder */
+  --line:#cbd3d1;       /* garis halus */
+  --hub:#0e7c7b;        /* fungsi logistik (aksen) */
+  --amber:#d99a1c;      /* bangunan baru / dok */
+  --ruko:#c4463a;       /* bukan aset */
+  --school:#46699c;     /* SMK */
+  --font-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45;overflow:hidden}
+#app{position:relative;height:100%;display:flex;flex-direction:column}
+#stage{position:relative;flex:1 1 auto;min-height:300px;overflow:hidden;touch-action:none;cursor:grab}
+#stage.drag{cursor:grabbing}
+canvas{display:block;width:100%;height:100%}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;font:500 11px/1.2 var(--font-body);color:var(--ink);background:rgba(248,250,249,.92);border:1px solid var(--line);border-radius:3px;padding:2px 6px}
+.lb::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:10px;background:var(--ink);opacity:.45}
+.lb.hub{background:var(--hub);color:#fff;border-color:var(--hub)}
+.lb.new{background:var(--amber);color:#1b282d;border-color:var(--amber)}
+.lb.ruko{color:var(--ruko);border-color:var(--ruko)}
+.lb.green{background:#5f9450;color:#fff;border-color:#5f9450}
+.lb.zone{background:transparent;border:0;font:600 10px/1 var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lb.zone::after{display:none}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 0 rgba(27,40,45,.04),0 8px 24px rgba(27,40,45,.08)}
+#left{position:absolute;left:16px;top:16px;width:300px;max-width:calc(100% - 32px);padding:14px 14px 12px;display:flex;flex-direction:column;gap:12px}
+#right{position:absolute;right:16px;top:16px;width:330px;max-height:calc(100% - 32px);overflow:auto;padding:14px 16px 14px;display:flex;flex-direction:column;gap:12px}
+h1{font:800 22px/1.05 var(--font-display);font-stretch:80%;letter-spacing:.01em;margin:0;text-wrap:balance;text-transform:uppercase}
+.sub{color:var(--muted);font-size:12px;margin:4px 0 0}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tab{appearance:none;border:1px solid var(--line);background:#fff;border-radius:4px;padding:8px 9px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);display:flex;flex-direction:column;gap:1px}
+.tab b{font:700 13px/1.15 var(--font-display);font-stretch:88%;text-transform:uppercase;letter-spacing:.02em}
+.tab span{font:400 10.5px/1.2 var(--font-mono);color:var(--muted)}
+.tab:hover{border-color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab[aria-selected="true"] span{color:#c9d3d1}
+.tab:focus-visible,.chip:focus-visible,.view:focus-visible{outline:2px solid var(--hub);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{appearance:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font:500 11.5px/1.3 var(--font-body);color:var(--muted);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:#eef2f1}
+.chip[aria-pressed="true"]::before{content:"● ";color:var(--hub)}
+.view{appearance:none;border:1px solid var(--line);background:#fff;border-radius:4px;padding:4px 9px;font:500 11.5px var(--font-body);cursor:pointer;color:var(--ink)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(27,40,45,.25)}
+.eyebrow{font:500 10.5px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#right h2{font:800 19px/1.1 var(--font-display);font-stretch:84%;text-transform:uppercase;margin:4px 0 0;text-wrap:balance}
+#right p{margin:0}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;border-top:1px solid var(--line);padding-top:10px}
+.kv dt{color:var(--muted);font-size:12.5px}
+.kv dd{margin:0;font:500 12.5px/1.4 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.kv dd.good{color:var(--hub)} .kv dd.bad{color:var(--ruko)}
+.notes{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:7px}
+.note{font-size:12.5px;padding-left:10px;border-left:3px solid var(--line)}
+.note.warn{border-left-color:var(--amber)}
+.note.find{border-left-color:var(--ruko)}
+.disc{font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+#hint{position:absolute;left:16px;bottom:12px;font:400 11px var(--font-mono);color:var(--muted);background:rgba(233,237,235,.8);padding:3px 6px;border-radius:3px}
+#north{position:absolute;right:362px;bottom:14px;width:44px;height:44px;pointer-events:none}
+@media (max-width:860px){
+  body{overflow:auto}
+  #app{height:auto;min-height:100%}
+  #stage{flex:0 0 auto;height:58vh;min-height:320px}
+  #left,#right{position:static;width:auto;max-width:none;max-height:none;margin:12px 16px 0}
+  #right{margin-bottom:16px}
+  #north{right:14px}
+  #hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="c" aria-label="Model massa 3D Plaza Shinta"></canvas>
+    <div id="labels"></div>
+    <svg id="north" viewBox="0 0 44 44" aria-hidden="true"><g id="needle"><circle cx="22" cy="22" r="20" fill="rgba(248,250,249,.9)" stroke="#cbd3d1"/><path d="M22 5 L28 26 L22 22 L16 26 Z" fill="#1b282d"/><text x="22" y="39" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" fill="#5d6b70">U</text></g></svg>
+    <div id="hint">seret: putar · shift+seret / dua jari: geser · gulir: zoom</div>
+  </div>
+
+  <section id="left" class="panel" aria-label="Skenario">
+    <div>
+      <h1>Plaza Shinta<br>Model Massa</h1>
+      <p class="sub">Jl. Teuku Umar, Cimone, Karawaci, Kota Tangerang</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Pilih skenario">
+      <button class="tab" role="tab" data-s="eksisting" id="tab-eksisting"><b>Eksisting</b><span>2026</span></button>
+      <button class="tab" role="tab" data-s="tahap-1" id="tab-tahap-1"><b>Tahap 1</b><span>2027–2031</span></button>
+      <button class="tab" role="tab" data-s="tahap-2" id="tab-tahap-2"><b>Tahap 2</b><span>2032–2061</span></button>
+      <button class="tab" role="tab" data-s="rombak" id="tab-rombak"><b>Rombak</b><span>cadangan, bila uji gagal</span></button>
+      <button class="tab" role="tab" data-s="int-before" id="tab-int-before"><b>Interior · sebelum</b><span>denah mal eksisting</span></button>
+      <button class="tab" role="tab" data-s="int-after" id="tab-int-after"><b>Interior · sesudah</b><span>tata ruang hub</span></button>
+    </div>
+    <div class="row" id="floors" aria-label="Pilih lantai" style="display:none">
+      <button class="chip fl" data-f="1" aria-pressed="true">Lantai 1</button>
+      <button class="chip fl" data-f="2" aria-pressed="false">Lantai 2</button>
+      <button class="chip fl" data-f="3" aria-pressed="false">Lantai 3</button>
+    </div>
+    <div class="row" aria-label="Lapisan">
+      <button class="chip" id="t-labels" aria-pressed="true">Label</button>
+      <button class="chip" id="t-zones" aria-pressed="false">Zonasi RDTR</button>
+      <button class="chip" id="t-boundary" aria-pressed="true">Batas aset</button>
+      <button class="chip" id="t-context" aria-pressed="true">Lingkungan</button>
+    </div>
+    <div class="row">
+      <button class="view" id="v-persp">Perspektif</button>
+      <button class="view" id="v-top">Tampak atas</button>
+      <button class="view" id="v-south">Dari Jl. Teuku Umar</button>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <aside id="right" class="panel" aria-live="polite"></aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+if(!window.THREE){document.getElementById('right').innerHTML='<p>Pustaka 3D gagal dimuat. Muat ulang halaman.</p>';return;}
+
+/* ---------- Data tapak (meter; x = timur, y = utara; titik 0,0 = tengah persil RDTR 29643) ---------- */
+// Batas aset: dibaca dari foto udara di berkas kasus (garis kuning), perkiraan.
+var BOUNDARY=[[-178,-42],[-182,20],[-176,62],[-100,66],[-100,128],[-56,132],[-50,72],[36,68],[40,92],[118,88],[123,40],[110,-12],[40,-15],[40,-63],[86,-63],[86,-97],[30,-93],[-48,-88],[-130,-64],[-172,-44]];
+function P(s){return s.split(' ').map(function(p){var a=p.split(',');return [+a[0],+a[1]];});}
+// Poligon zonasi: layanan peta RDTR Kota Tangerang 2023-2043 (disederhanakan ke meter).
+var ZONES=[
+ {z:'K2',id:29643,p:P('25,-64 -46,-60 -43,-37 -39,6 -39,14 -35,46 -32,67 34,59 30,7 34,1 33,-2 30,-8 24,-61')},
+ {z:'K2',id:29642,p:P('-47,14 -174,27 -171,56 -155,55 -106,51 -100,50 -43,45')},
+ {z:'K2',id:29641,p:P('-48,5 -51,-30 -172,-17 -174,14 -174,19')},
+ {z:'K2',id:29639,p:P('-54,-66 -55,-70 -96,-68 -115,-65 -129,-61 -170,-39 -171,-26 -52,-38 -54,-62')},
+ {z:'K2',id:29640,p:P('95,-86 95,-94 66,-92 42,-90 38,-89 38,-81 39,-72 46,-65 47,-63 53,-11 52,-9 112,-9 114,-19 112,-40 109,-47 104,-53 99,-57 96,-63 95,-66')},
+ {z:'K2',id:29637,p:P('30,-81 30,-89 -6,-87 -41,-85 -48,-85 -47,-72 -46,-68 31,-74')},
+ {z:'SPU',id:679,p:P('42,65 50,79 56,89 61,88 88,83 116,87 119,80 123,68 125,55 123,45 121,39 117,27 115,15 115,3 114,-1 52,-1 50,3 46,6 42,7 38,8 43,62')},
+ {z:'R',id:15653,p:P('-9,124 5,126 16,127 49,114 54,108 53,95 55,90 42,65 41,66 -35,76 -39,74 -40,67 -96,73 -99,73 -99,103 -98,128 -79,131 -64,134 -53,134 -27,127')},
+ {z:'R',id:15664,p:P('97,131 96,125 97,118 104,109 111,98 114,91 88,87 62,92 58,93 57,102 58,108 52,117 17,130 5,130 11,174 16,216 22,236 34,281 49,291 80,290 96,284 128,279 130,236 131,221 128,202 118,174 114,156 110,145 102,136')},
+ {z:'R',id:15670,p:P('194,282 183,254 171,237 160,209 161,197 154,180 147,165 140,146 145,118 152,97 150,88 144,85 147,67 148,48 152,41 168,35 184,28 192,9 194,0 188,-11 181,-12 177,-53 145,-53 139,-57 116,-56 108,-54 116,-41 118,-9 120,19 124,38 129,55 125,75 114,99 100,123 101,131 113,143 120,167 133,207 134,237 132,280 141,303 153,339 161,365 204,360 238,342 215,282')},
+ {z:'I',id:10570,p:P('197,-53 219,-54 231,-52 246,-42 261,-43 276,-37 285,-54 292,-76 295,-102 254,-101 249,-64 244,-54 207,-56 177,-53 181,-12 188,-11 182,-14 180,-51')}
+];
+var ZINFO={K2:{c:0xd99a1c,n:'K-2 Perdagangan & Jasa'},SPU:{c:0x46699c,n:'SPU Skala Kecamatan'},R:{c:0x8fae6b,n:'Perumahan Kepadatan Tinggi'},I:{c:0x7a6f8f,n:'Kawasan Peruntukan Industri'}};
+// Ruko (bukan bagian aset): mengikuti blok RDTR, diperkecil.
+var RUKO=[P('-52,18 -170,30 -168,52 -104,48 -49,42'),P('-54,2 -56,-26 -168,-14 -170,12'),P('-60,-62 -100,-64 -100,-37 -58,-41'),P('-112,-62 -128,-58 -166,-37 -166,-30 -112,-36')];
+var ROAD=[[-196,90],[-190,20],[-186,-36],[-170,-54],[-128,-74],[-88,-87],[-48,-93],[30,-98],[110,-103],[190,-109],[300,-114]];
+
+// Massa gedung utama (perkiraan dari foto udara, dicocokkan ke ±19.208 m² / 3 lantai)
+// Bentuk dari site visit Nov 2026: kotak, sedikit mengembang di bagian atrium (tengah)
+var MN={x0:-36,x1:22,y0:24,y1:60}, MM={x0:-39,x1:25,y0:-8,y1:24}, MS={x0:-36,x1:22,y0:-48,y1:-8}, FH=5, BLOCKS=[MN,MM,MS];
+function A(b){return (b.x1-b.x0)*(b.y1-b.y0);}
+var FOOT=A(MN)+A(MM)+A(MS);
+var LIFT={x0:MM.x1,x1:MM.x1+6,y0:7,y1:19}; // menempel di pintu timur (site visit: pintu samping di level atrium)
+// Ruang terbuka hijau (KDH 15%) di lahan bekas rencana annex + lapangan basket
+var RTH_N=[[-100,66],[-100,128],[-56,132],[-50,72]], RTH_SE=[[40,-63],[86,-63],[86,-97],[40,-95]], COURT={x0:62,x1:106,y0:44,y1:66};
+function PA(p){var a=0;for(var i=0;i<p.length;i++){var q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1];}return Math.abs(a)/2;}
+var RTH_AREA=PA(RTH_N)+PA(RTH_SE)+A(COURT);
+var RB1={x0:-42,x1:30,y0:-6,y1:64}, RB2={x0:-42,x1:30,y0:-82,y1:-10};
+function fmt(n){return Math.round(n).toLocaleString('id-ID');}
+
+/* ---------- Three.js dasar ---------- */
+var stage=document.getElementById('stage'), canvas=document.getElementById('c');
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+var scene=new THREE.Scene(); scene.background=new THREE.Color(0xe9edeb); scene.fog=new THREE.Fog(0xe9edeb,520,1100);
+var camera=new THREE.PerspectiveCamera(36,1,1,3000);
+scene.add(new THREE.HemisphereLight(0xffffff,0xaab4b2,0.52));
+var sun=new THREE.DirectionalLight(0xfff1dc,0.5); sun.position.set(-180,260,140); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); var sc=sun.shadow.camera; sc.left=-300;sc.right=300;sc.top=300;sc.bottom=-300;sc.near=10;sc.far=800; sun.shadow.bias=-0.0006;
+scene.add(sun);
+
+function mat(c,o){var m=new THREE.MeshLambertMaterial({color:c});if(o!==undefined&&o<1){m.transparent=true;m.opacity=o;m.depthWrite=o>0.6;}return m;}
+var EDGE=new THREE.LineBasicMaterial({color:0x1b282d,transparent:true,opacity:0.35});
+function shapeOf(pts){var s=new THREE.Shape();pts.forEach(function(p,i){i?s.lineTo(p[0],p[1]):s.moveTo(p[0],p[1]);});return s;}
+function solid(pts,h0,h1,color,o,noEdge){
+  var g=new THREE.ExtrudeGeometry(shapeOf(pts),{depth:h1-h0,bevelEnabled:false});
+  var m=new THREE.Mesh(g,mat(color,o)); m.rotation.x=-Math.PI/2; m.position.y=h0;
+  if(o===undefined||o>=0.6){m.castShadow=true;} m.receiveShadow=true;
+  if(!noEdge){var e=new THREE.LineSegments(new THREE.EdgesGeometry(g,20),EDGE);m.add(e);}
+  return m;
+}
+function rect(b){return [[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1]];}
+function box(b,h0,h1,color,o,noEdge){return solid(rect(b),h0,h1,color,o,noEdge);}
+function flat(pts,y,color,o){var m=new THREE.Mesh(new THREE.ShapeGeometry(shapeOf(pts)),new THREE.MeshLambertMaterial({color:color,transparent:o<1,opacity:o,depthWrite:false,side:THREE.DoubleSide}));m.rotation.x=-Math.PI/2;m.position.y=y;m.receiveShadow=true;return m;}
+function outline(pts,y,color,dash){
+  var v=pts.concat([pts[0]]).map(function(p){return new THREE.Vector3(p[0],y,-p[1]);});
+  var g=new THREE.BufferGeometry().setFromPoints(v);
+  var m=dash?new THREE.LineDashedMaterial({color:color,dashSize:5,gapSize:3}):new THREE.LineBasicMaterial({color:color});
+  var l=new THREE.Line(g,m); if(dash)l.computeLineDistances(); return l;
+}
+function gable(b,h0,h1,color){ // bubungan arah utara-selatan
+  var xm=(b.x0+b.x1)/2, v=[b.x0,h0,-b.y0, b.x1,h0,-b.y0, xm,h1,-b.y0, b.x0,h0,-b.y1, b.x1,h0,-b.y1, xm,h1,-b.y1];
+  var idx=[0,1,2, 4,3,5, 0,2,5, 0,5,3, 1,4,5, 1,5,2];
+  var g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); g.setIndex(idx); g.computeVertexNormals();
+  var m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide})); m.castShadow=true; return m;
+}
+function floors(b,n,colors,opac){var g=new THREE.Group();for(var i=0;i<n;i++){g.add(box(b,i*FH+0.15,(i+1)*FH-0.15,colors[i],opac?opac[i]:1));}return g;}
+function vans(list,g){list.forEach(function(v){var w=v[2]?5.2:2.1,d=v[2]?2.1:5.2;g.add(box({x0:v[0],x1:v[0]+w,y0:v[1],y1:v[1]+d},0.3,2.5,0xffffff,1,true));});}
+
+/* ---------- Dasar: tanah, jalan, lingkungan ---------- */
+var ground=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),new THREE.MeshLambertMaterial({color:0xdfe5e2}));ground.rotation.x=-Math.PI/2;ground.position.y=-0.2;ground.receiveShadow=true;scene.add(ground);
+(function(){ // Jl. Teuku Umar, lebar ±10 m
+  var L=[],R=[],w=5;for(var i=0;i<ROAD.length;i++){var a=ROAD[Math.max(0,i-1)],b=ROAD[Math.min(ROAD.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],n=Math.hypot(dx,dy);L.push([ROAD[i][0]-dy/n*w,ROAD[i][1]+dx/n*w]);R.push([ROAD[i][0]+dy/n*w,ROAD[i][1]-dx/n*w]);}
+  scene.add(flat(L.concat(R.reverse()),0.02,0x9aa5a6,1));
+})();
+scene.add(flat(BOUNDARY,0.05,0xc3cccb,1));
+var gBoundary=outline(BOUNDARY,0.6,0xd4a400,false); gBoundary.material.linewidth=2; scene.add(gBoundary);
+var gBoundary2=outline(BOUNDARY,0.9,0xd4a400,false); scene.add(gBoundary2);
+
+function inPoly(x,y,pts){var c=false;for(var i=0,j=pts.length-1;i<pts.length;j=i++){var a=pts[i],b=pts[j];if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))c=!c;}return c;}
+var gContext=new THREE.Group(); scene.add(gContext);
+(function(){ // rumah-rumah sekitar: acak tapi tetap (seed), hanya untuk skala
+  var s=7;function rnd(){s=(s*16807)%2147483647;return s/2147483647;}
+  var geo=new THREE.BoxGeometry(1,1,1), cols=[0xd2d8d5,0xcfd3cf,0xd9d2c8,0xc9cfd0], list=[[],[],[],[]];
+  for(var x=-330;x<=330;x+=17){for(var y=-300;y<=320;y+=15){
+    var px=x+rnd()*6,py=y+rnd()*5; if(rnd()<0.22)continue;
+    var near=false;for(var k=0;k<ROAD.length-1;k++){var a=ROAD[k],b=ROAD[k+1],t=Math.max(0,Math.min(1,((px-a[0])*(b[0]-a[0])+(py-a[1])*(b[1]-a[1]))/((b[0]-a[0])*(b[0]-a[0])+(b[1]-a[1])*(b[1]-a[1]))));if(Math.hypot(px-(a[0]+t*(b[0]-a[0])),py-(a[1]+t*(b[1]-a[1])))<14){near=true;break;}}
+    if(near)continue;
+    var hit=false;for(var dx=-10;dx<=10&&!hit;dx+=10)for(var dy=-10;dy<=10;dy+=10)if(inPoly(px+dx,py+dy,BOUNDARY)){hit=true;break;}
+    if(hit)continue; if(px>36&&px<92&&py>-68&&py<-10)continue; // tanah kosong timur
+    list[Math.floor(rnd()*4)].push([px,py,9+rnd()*5,8+rnd()*4,3+rnd()*4]);
+  }}
+  list.forEach(function(arr,i){var im=new THREE.InstancedMesh(geo,new THREE.MeshLambertMaterial({color:cols[i]}),arr.length),m=new THREE.Matrix4();
+    arr.forEach(function(h,j){m.makeScale(h[2],h[4],h[3]);m.setPosition(h[0],h[4]/2,-h[1]);im.setMatrixAt(j,m);});im.castShadow=true;im.receiveShadow=true;gContext.add(im);});
+  gContext.add(flat([[38,-63],[86,-63],[86,-16],[40,-16]],0.04,0xb7c9a3,1)); // tanah kosong (di luar batas aset)
+})();
+
+var gZones=new THREE.Group(); gZones.visible=false; scene.add(gZones);
+ZONES.forEach(function(z){gZones.add(flat(z.p,1.2,ZINFO[z.z].c,0.42));gZones.add(outline(z.p,1.3,ZINFO[z.z].c,false));});
+
+/* ---------- Elemen tetap di semua skenario ---------- */
+var gFixed=new THREE.Group(); scene.add(gFixed);
+RUKO.forEach(function(p){gFixed.add(solid(p,0,8,0xc4463a,0.82));});
+// SMK PGRI 109 (bentuk U) + lapangan basket
+[{x0:46,x1:118,y0:26,y1:36},{x0:46,x1:56,y0:-4,y1:36},{x0:46,x1:112,y0:-6,y1:4}].forEach(function(b){gFixed.add(box(b,0,8,0x46699c));});
+gFixed.add(flat(rect({x0:62,x1:106,y0:44,y1:66}),0.12,0x3f8fb0,1));
+gFixed.add(outline(rect({x0:62,x1:106,y0:44,y1:66}),0.2,0xffffff,false));
+
+/* ---------- Skenario ---------- */
+var S={}; ['eksisting','tahap-1','tahap-2','rombak','ib1','ib2','ib3','ia1','ia2','ia3'].forEach(function(k){S[k]=new THREE.Group();S[k].visible=false;scene.add(S[k]);});
+var CONC=0xb8b2a8, IDLE=0xcfd4d2, HUB=0x0e7c7b, HUB2=0x2f9c96, AMB=0xd99a1c;
+function pool(g,closed){
+  g.add(flat(rect({x0:-97,x1:-58,y0:72,y1:128}),0.1,closed?0xb9c0be:0xcfd8c6,1));
+  g.add(flat(rect({x0:-88,x1:-72,y0:86,y1:118}),0.25,closed?0x9aa3a2:0x3fb3c9,1));
+  g.add(box({x0:-70,x1:-60,y0:76,y1:92},0,4,closed?0xbfc5c3:0xd8d2c4));
+}
+function dock(g){g.add(box({x0:MS.x0,x1:MS.x1,y0:MS.y0-7,y1:MS.y0},4.2,4.8,AMB));for(var x=MS.x0+3;x<MS.x1;x+=9){g.add(box({x0:x,x1:x+0.5,y0:MS.y0-6.8,y1:MS.y0-6.3},0,4.2,0x6d7578,1,true));}}
+function yard(g){g.add(flat(rect({x0:-44,x1:30,y0:-86,y1:-56}),0.1,0xaab4b4,1));g.add(outline(rect({x0:-44,x1:30,y0:-86,y1:-56}),0.25,0xffffff,true));}
+function kiosks(g){for(var y=-84;y<-58;y+=5){g.add(box({x0:-52,x1:-47,y0:y,y1:y+4},0,3,0xe7c873));}}
+
+// Eksisting
+(function(g){
+  BLOCKS.forEach(function(b){g.add(floors(b,3,[CONC,CONC,CONC]));});
+  var half=(MN.x1-MN.x0)/2; g.add(gable({x0:MN.x0,x1:MN.x0+half,y0:MN.y0,y1:MN.y1},15,19,0x7d3f3a)); g.add(gable({x0:MN.x0+half,x1:MN.x1,y0:MN.y0,y1:MN.y1},15,19,0x7d3f3a));
+  g.add(box(MM,15,15.4,0xe6e8e4,1,true)); g.add(box(MS,15,15.4,0xe6e8e4,1,true));
+  pool(g,false);
+  g.add(flat(rect({x0:-44,x1:30,y0:-86,y1:-56}),0.1,0xb4bcbc,1));
+  vans([[-36,-80],[-30,-80],[-18,-80],[2,-80],[14,-72],[-40,-66]],g);
+})(S['eksisting']);
+
+// Tahap 1: hub di lantai dasar, lantai 2-3 belum dipakai
+(function(g){
+  BLOCKS.forEach(function(b){g.add(floors(b,3,[HUB,IDLE,IDLE],[1,0.5,0.5]));});
+  dock(g); yard(g); pool(g,true);
+  vans([[-32,-66],[-26,-66],[-20,-66],[-14,-66],[-8,-66],[-2,-66],[4,-66],[10,-66],[-30,-82,1],[-10,-82,1],[12,-82,1]],g);
+})(S['tahap-1']);
+
+// Tahap 2: retrofit 3 lantai, lahan bekas annex jadi RTH
+var GREEN=0x7fb069, GREEN2=0x5f9450;
+function tree(g,x,y,s){s=s||1;g.add(box({x0:x-0.4,x1:x+0.4,y0:y-0.4,y1:y+0.4},0,3*s,0x7a5c3e,1,true));
+  var c=new THREE.Mesh(new THREE.SphereGeometry(2.6*s,10,8),mat(GREEN2));c.position.set(x,3*s+1.8*s,-y);c.castShadow=true;g.add(c);}
+function park(g,pts,step){g.add(flat(pts,0.14,GREEN,1));g.add(outline(pts,0.3,GREEN2,false));
+  var xs=pts.map(function(p){return p[0];}),ys=pts.map(function(p){return p[1];});
+  var s=11;function rnd(){s=(s*16807)%2147483647;return s/2147483647;}
+  for(var x=Math.min.apply(null,xs)+5;x<Math.max.apply(null,xs)-3;x+=step){for(var y=Math.min.apply(null,ys)+5;y<Math.max.apply(null,ys)-3;y+=step){
+    var px=x+rnd()*3-1.5,py=y+rnd()*3-1.5; if(inPoly(px,py,pts)&&inPoly(px+3,py+3,pts)&&inPoly(px-3,py-3,pts)&&rnd()>0.25)tree(g,px,py,0.8+rnd()*0.5);}}}
+function path(g,pts){g.add(flat(pts,0.18,0xe2dccd,1));}
+(function(g){
+  BLOCKS.forEach(function(b){g.add(floors(b,3,[HUB,HUB2,HUB2])); g.add(box(b,15,15.5,0xdfe6e3,1,true));});
+  dock(g); yard(g);
+  park(g,RTH_N,9); path(g,[[-96,96],[-54,99],[-54,102],[-96,99]]);
+  park(g,RTH_SE,9); path(g,[[42,-80],[84,-80],[84,-78],[42,-78]]);
+  g.add(flat(rect(COURT),0.16,GREEN,1)); g.add(outline(rect(COURT),0.3,0xffffff,false));
+  g.add(outline(rect({x0:COURT.x0+4,x1:COURT.x1-4,y0:COURT.y0+3,y1:COURT.y1-3}),0.3,0xffffff,false));
+  g.add(box(LIFT,0,15,0x6d7578)); // inti lift barang, menempel di pintu timur eksisting
+  vans([[-32,-66],[-26,-66],[-20,-66],[-14,-66],[-8,-66],[-2,-66],[4,-66],[10,-66],[-30,-82,1],[-10,-82,1],[12,-82,1]],g);
+})(S['tahap-2']);
+
+// Rombak: gedung lama dibongkar, hub 1 lantai dua fase
+(function(g){
+  BLOCKS.forEach(function(b){g.add(outline(rect(b),0.3,0x7d3f3a,true));});
+  g.add(box(RB1,0,9,HUB)); g.add(box(RB1,9,9.5,0xdfe6e3,1,true));
+  g.add(box(RB2,0,9,AMB,0.42)); g.add(outline(rect(RB2),9.2,0x8a6208,true));
+  g.add(box({x0:RB1.x1,x1:RB1.x1+6,y0:RB1.y0+4,y1:RB1.y1-4},4.2,4.8,AMB));
+  pool(g,true);
+  vans([[31,2],[31,10],[31,18],[31,26],[31,34],[31,42],[31,50]],g);
+})(S['rombak']);
+
+
+/* ---------- Interior: denah dari sketsa site visit tim (Nov 2026), diskalakan ke massa model ---------- */
+var ATR={x0:-22,x1:10,y0:-5,y1:19}, ESC_W={x0:-27,x1:-24.5,y0:4,y1:17}, ESC_E={x0:12.5,x1:15,y0:4,y1:17};
+var RR1={x0:2,x1:22,y0:28,y1:60};            // Lt 1: ruang rapat / ballroom (timur laut)
+var RM_E={x0:19,x1:25,y0:14,y1:22}, RM_SE={x0:14,x1:22,y0:-48,y1:-40}; // Lt 1: ruangan
+var BALL={x0:-36,x1:22,y0:35,y1:60};         // Lt 2: ballroom / function hall (utara)
+var BIO={x0:14,x1:22,y0:-46,y1:-14};         // Lt 2: bioskop (tenggara)
+var WALLED={x0:-36,x1:22,y0:34,y1:60};       // Lt 3: ruang ditembok, isi belum diketahui
+var FUT={x0:-32,x1:16,y0:-45,y1:-16};        // Lt 3: lapangan futsal (selatan)
+var SLD=[[-28.5,-19.5],[-14,-6],[-2.5,6.5]]; // tiga pintu besi geser di dinding selatan
+var DOOR={w:[[7,13]],e:[[7,13]],s:SLD};
+var WALLC=0x8d9492, KIOS=0xd9c9a8, ROOM=0xc9c2b5, HALLC=0xb59ac2, VOIDC=0x4a5356, SHUT=0x56636a, BIOC=0x8a4f5c, WALLEDC=0x9aa0a0;
+var ZC={sortir:0x9fd3cf,simpan:0xf0c987,akses:0xf7e9a8,penunjang:0xc3cde6,fleks:0xd7c3e0};
+var AREA={}, COUNT={};
+function wseg(g,x0,y0,x1,y1,gaps){var hz=(y0===y1),a=hz?x0:y0,b=hz?x1:y1,t=0.3,p=a;
+  (gaps||[]).slice().sort(function(m,n){return m[0]-n[0];}).concat([[b,b]]).forEach(function(c){
+    if(c[0]>p)g.add(box(hz?{x0:p,x1:c[0],y0:y0-t,y1:y0+t}:{x0:x0-t,x1:x0+t,y0:p,y1:c[0]},0,4.2,WALLC,1,true)); p=c[1];});}
+function shell(g,G){G=G||{};
+  BLOCKS.forEach(function(b){g.add(flat(rect(b),0.08,0xf3f5f3,1));});
+  wseg(g,MN.x0,MN.y1,MN.x1,MN.y1); wseg(g,MN.x0,MN.y0,MN.x0,MN.y1); wseg(g,MN.x1,MN.y0,MN.x1,MN.y1);
+  wseg(g,MM.x0,MM.y1,MN.x0,MM.y1); wseg(g,MN.x1,MM.y1,MM.x1,MM.y1); wseg(g,MM.x0,MM.y0,MS.x0,MM.y0); wseg(g,MS.x1,MM.y0,MM.x1,MM.y0);
+  wseg(g,MM.x0,MM.y0,MM.x0,MM.y1,G.w); wseg(g,MM.x1,MM.y0,MM.x1,MM.y1,G.e);
+  wseg(g,MS.x0,MS.y0,MS.x0,MS.y1); wseg(g,MS.x1,MS.y0,MS.x1,MS.y1); wseg(g,MS.x0,MS.y0,MS.x1,MS.y0,G.s);}
+function shutters(g,h){SLD.forEach(function(s){g.add(box({x0:s[0],x1:s[1],y0:MS.y0-0.25,y1:MS.y0+0.25},0,h,SHUT,1,true));
+  for(var x=s[0]+1;x<s[1];x+=1.5)g.add(outline([[x,MS.y0-0.3],[x,MS.y0-0.3]],0.2,0xffffff,false));});}
+function units(g,k,b,n,dir,color,h){var w=((dir==='x')?(b.x1-b.x0):(b.y1-b.y0))/n;COUNT[k]=(COUNT[k]||0)+n;
+  for(var i=0;i<n;i++){g.add(box(dir==='x'?{x0:b.x0+i*w+0.3,x1:b.x0+(i+1)*w-0.3,y0:b.y0+0.3,y1:b.y1-0.3}:{x0:b.x0+0.3,x1:b.x1-0.3,y0:b.y0+i*w+0.3,y1:b.y0+(i+1)*w-0.3},0.1,h||3,color));}}
+function zone(g,k,cat,b){AREA[k]=AREA[k]||{};AREA[k][cat]=(AREA[k][cat]||0)+A(b);g.add(flat(rect(b),0.14,ZC[cat],1));g.add(outline(rect(b),0.22,0x5b6668,cat==='akses'));}
+function esc2(g,color){g.add(box(ESC_W,0.1,1.4,color));g.add(box(ESC_E,0.1,1.4,color));}
+function hatch(g,b,y,color,step){for(var c=b.x0+b.y0+step;c<b.x1+b.y1;c+=step){var xa=Math.max(b.x0,c-b.y1),xb=Math.min(b.x1,c-b.y0);if(xb>xa)g.add(outline([[xa,c-xa],[xb,c-xb]],y,color,false));}}
+function hole(g){g.add(flat(rect(ATR),0.16,VOIDC,1));g.add(outline(rect(ATR),1.1,0xffffff,false));hatch(g,ATR,0.2,0x7d8789,4);}
+function grid(g,b,dx,dy,w,d,h,color){for(var x=b.x0+1;x+w<=b.x1-0.5;x+=dx)for(var y=b.y0+1;y+d<=b.y1-0.5;y+=dy)g.add(box({x0:x,x1:x+w,y0:y,y1:y+d},0.15,h,color,1,true));}
+function ring(g,k){[{x0:ATR.x0-5,x1:ATR.x1+5,y0:ATR.y1,y1:ATR.y1+3},{x0:ATR.x0-5,x1:ATR.x1+5,y0:ATR.y0-3,y1:ATR.y0},{x0:ATR.x0-5,x1:ATR.x0,y0:ATR.y0,y1:ATR.y1},{x0:ATR.x1,x1:ATR.x1+5,y0:ATR.y0,y1:ATR.y1}].forEach(function(b){zone(g,k,'akses',b);});}
+function room(g,b,color,h,o){g.add(box(b,0.1,h||3,color,o||1));}
+
+// SEBELUM (kondisi site visit)
+(function(g){ // Lantai 1
+  shell(g,DOOR); shutters(g,3.6);
+  units(g,'ib1',{x0:-39,x1:-34,y0:14,y1:24},2,'y',KIOS); units(g,'ib1',{x0:-39,x1:-34,y0:-6,y1:4},2,'y',KIOS);
+  room(g,RM_E,ROOM); room(g,RM_SE,ROOM); room(g,RR1,HALLC,3.4,0.9);
+  g.add(flat(rect(ATR),0.14,0xdfe4e1,1)); g.add(outline(rect(ATR),0.22,0x5b6668,false)); esc2(g,0x6d7578);
+  g.add(flat(rect({x0:-35,x1:13,y0:-46,y1:-10}),0.12,0xece6d6,1)); g.add(outline(rect({x0:-35,x1:13,y0:-46,y1:-10}),0.22,0xb59a6a,true));
+  g.add(flat(rect({x0:-35,x1:1,y0:28,y1:59}),0.12,0xece6d6,1)); g.add(outline(rect({x0:-35,x1:1,y0:28,y1:59}),0.22,0xb59a6a,true));
+  g.add(flat(rect({x0:-44,x1:30,y0:-86,y1:-56}),0.1,0xb4bcbc,1));
+})(S['ib1']);
+(function(g){ // Lantai 2
+  shell(g,{}); room(g,BALL,HALLC,3.4,0.9);
+  units(g,'ib2',{x0:-36,x1:-30,y0:26,y1:34},2,'y',KIOS); units(g,'ib2',{x0:-30,x1:-25,y0:29,y1:34},1,'x',KIOS);
+  units(g,'ib2',{x0:16,x1:22,y0:26,y1:34},2,'y',KIOS); units(g,'ib2',{x0:11,x1:16,y0:29,y1:34},1,'x',KIOS);
+  units(g,'ib2',{x0:-39,x1:-34,y0:-8,y1:24},5,'y',KIOS); units(g,'ib2',{x0:20,x1:25,y0:-8,y1:24},4,'y',KIOS);
+  hole(g); esc2(g,0x6d7578);
+  g.add(box(BIO,0.1,1.2,BIOC)); for(var y=BIO.y0+2;y<BIO.y1-1;y+=3){g.add(box({x0:BIO.x0+0.5,x1:BIO.x1-0.5,y0:y,y1:y+0.6},1.2,1.2+(y-BIO.y0)*0.08,0x6e3a46,1,true));}
+})(S['ib2']);
+(function(g){ // Lantai 3
+  shell(g,{}); room(g,WALLED,WALLEDC,4.2,0.85); hatch(g,WALLED,4.3,0x6d7578,5);
+  units(g,'ib3',{x0:-39,x1:-34,y0:-6,y1:22},4,'y',KIOS); units(g,'ib3',{x0:20,x1:25,y0:-6,y1:24},4,'y',KIOS);
+  hole(g); esc2(g,0x6d7578);
+  g.add(box(FUT,0.1,0.5,0x7fb069)); g.add(outline(rect({x0:FUT.x0+3,x1:FUT.x1-3,y0:FUT.y0+3,y1:FUT.y1-3}),0.7,0xffffff,false));
+  g.add(outline([[FUT.x0+3,(FUT.y0+FUT.y1)/2],[FUT.x1-3,(FUT.y0+FUT.y1)/2]],0.7,0xffffff,false));
+})(S['ib3']);
+
+// SESUDAH
+(function(g){var k='ia1'; // Lantai 1: dipakai sejak Tahap 1
+  shell(g,DOOR);
+  zone(g,k,'sortir',{x0:-35.5,x1:13.5,y0:-47.5,y1:-39});                    // terima & bongkar di balik pintu besi geser
+  zone(g,k,'sortir',{x0:-25,x1:9.5,y0:-35,y1:-9});                          // sortir primer
+  [-21,-9,3].forEach(function(x){g.add(box({x0:x,x1:x+2,y0:-33,y1:-10},0.15,1.1,HUB,1,true));});
+  g.add(box({x0:-21,x1:5,y0:-35,y1:-33.4},0.15,1.1,HUB,1,true));
+  zone(g,k,'simpan',{x0:-35.5,x1:-29,y0:-35,y1:-9}); grid(g,{x0:-35.5,x1:-29,y0:-35,y1:-9},9,6.5,5,4,1.3,0xb5772a); // paket besar
+  zone(g,k,'simpan',{x0:13,x1:21.5,y0:-35,y1:-9}); [-34,-22].forEach(function(y){g.add(box({x0:13.5,x1:21,y0:y,y1:y+11},0.15,2.4,0xc98b8b,0.55));}); // bernilai & retur
+  zone(g,k,'penunjang',RM_SE); units(g,'x',{x0:14.3,x1:21.7,y0:-47.7,y1:-40.3},1,'x',0x9aa9cf,2.8);
+  zone(g,k,'akses',{x0:-35.5,x1:21.5,y0:-39,y1:-35});
+  zone(g,k,'akses',{x0:-29,x1:-25,y0:-35,y1:-8}); zone(g,k,'akses',{x0:9.5,x1:13,y0:-35,y1:-8});
+  ring(g,k); zone(g,k,'sortir',ATR); grid(g,ATR,4,3.2,2.6,1.6,1.7,AMB);   // sortir per rute di atrium
+  esc2(g,0xaeb5b3);
+  zone(g,k,'simpan',{x0:-38.5,x1:-34,y0:14,y1:24}); zone(g,k,'simpan',{x0:-38.5,x1:-34,y0:-6,y1:4}); // rak ambil kurir (bekas 4 kios)
+  grid(g,{x0:-38.5,x1:-34,y0:14,y1:24},9,3.4,3.2,2.4,1.7,AMB); grid(g,{x0:-38.5,x1:-34,y0:-6,y1:4},9,3.4,3.2,2.4,1.7,AMB);
+  zone(g,k,'akses',{x0:-35.5,x1:21.5,y0:22,y1:27.5});
+  zone(g,k,'simpan',{x0:-35.5,x1:0.5,y0:28,y1:59.5}); grid(g,{x0:-35.5,x1:0.5,y0:28,y1:59.5},4.4,5.5,3.4,2.2,2.6,0xb5772a); // penyangga transit
+  zone(g,k,'penunjang',{x0:2,x1:21.5,y0:28,y1:59.5}); units(g,'x',{x0:2,x1:21.7,y0:44,y1:59.7},3,'x',0x9aa9cf,2.8); units(g,'x',{x0:2,x1:21.7,y0:28,y1:40},2,'x',0x9aa9cf,2.8); // kantor, ruang kurir, pelatihan (bekas ruang rapat)
+  zone(g,k,'penunjang',RM_E);
+  dock(g); yard(g);
+  g.add(flat(rect({x0:-46,x1:-40,y0:2,y1:20}),0.12,0xf7e9a8,1)); g.add(outline(rect({x0:-46,x1:-40,y0:2,y1:20}),0.25,0xffffff,true));
+  for(var y=3;y<19;y+=1.6){g.add(box({x0:-45.3,x1:-43.5,y0:y,y1:y+0.7},0.15,1.1,0x3d4a4e,1,true));}
+  g.add(box(LIFT,0,4.2,AMB,0.4)); g.add(outline(rect(LIFT),4.3,0x8a6208,true));
+  vans([[-27,-56],[-23,-56],[-12,-56],[-8,-56],[0,-56],[4,-56],[-30,-82,1],[-10,-82,1],[12,-82,1]],g);
+})(S['ia1']);
+function upperAfter(g,k){shell(g,{});
+  hole(g); ring(g,k);
+  g.add(box(ESC_W,0.1,2.2,HUB)); var c=new THREE.Mesh(new THREE.CylinderGeometry(1.25,1.25,3,16),mat(AMB)); c.position.set((ESC_E.x0+ESC_E.x1)/2,1.6,-(ESC_E.y0+ESC_E.y1)/2); g.add(c);
+  g.add(box(LIFT,0,4.2,0x6d7578)); zone(g,k,'akses',{x0:20,x1:24.5,y0:6.5,y1:13.5});}
+(function(g){var k='ia2'; upperAfter(g,k); // Lantai 2 (Tahap 2)
+  zone(g,k,'sortir',{x0:-35.5,x1:21.5,y0:35,y1:59.5}); for(var y=38;y<57;y+=5){g.add(box({x0:-32,x1:18,y0:y,y1:y+1.6},0.15,1.1,HUB2,1,true));}
+  zone(g,k,'akses',{x0:-35.5,x1:21.5,y0:27,y1:35});
+  zone(g,k,'simpan',{x0:-38.5,x1:-34,y0:-7.5,y1:23.5}); grid(g,{x0:-38.5,x1:-34,y0:-7.5,y1:23.5},9,3.4,3.2,2.4,1.4,AMB);
+  zone(g,k,'penunjang',{x0:20,x1:24.5,y0:13.5,y1:23.5}); zone(g,k,'penunjang',{x0:20,x1:24.5,y0:-7.5,y1:6.5});
+  units(g,'x',{x0:20,x1:24.7,y0:13.5,y1:23.5},2,'y',0x9aa9cf,2.8); units(g,'x',{x0:20,x1:24.7,y0:-7.5,y1:6.5},2,'y',0x9aa9cf,2.8);
+  zone(g,k,'penunjang',BIO); units(g,'x',{x0:BIO.x0,x1:BIO.x1+0.2,y0:BIO.y0,y1:BIO.y1},3,'y',0x9aa9cf,2.8);
+  zone(g,k,'fleks',{x0:-35.5,x1:12,y0:-47.5,y1:-11}); grid(g,{x0:-33,x1:10,y0:-45,y1:-13},4,3.2,2.6,1.6,1.4,AMB);
+})(S['ia2']);
+(function(g){var k='ia3'; upperAfter(g,k); // Lantai 3 (Tahap 2)
+  room(g,WALLED,WALLEDC,0.6,0.7); hatch(g,WALLED,0.8,0x6d7578,5);
+  zone(g,k,'fleks',FUT); grid(g,{x0:FUT.x0,x1:FUT.x1,y0:FUT.y0,y1:-28},4,3.2,2.6,1.6,1.4,AMB);
+  for(var x=-29;x<12;x+=9){g.add(box({x0:x,x1:x+6,y0:-24,y1:-21.5},0.15,1,0x9a7fb0,1,true));}
+  zone(g,k,'akses',{x0:-35.5,x1:21.5,y0:27,y1:34});
+  zone(g,k,'penunjang',{x0:-38.5,x1:-34,y0:-6,y1:22}); units(g,'x',{x0:-38.7,x1:-34,y0:-6,y1:22},4,'y',0x9aa9cf,2.8);
+  zone(g,k,'penunjang',{x0:20,x1:24.5,y0:13.5,y1:24}); zone(g,k,'penunjang',{x0:20,x1:24.5,y0:-6,y1:6.5});
+  units(g,'x',{x0:20,x1:24.7,y0:13.5,y1:24},2,'y',0x9aa9cf,2.8); units(g,'x',{x0:20,x1:24.7,y0:-6,y1:6.5},2,'y',0x9aa9cf,2.8);
+})(S['ia3']);
+var VOIDA=A(ATR)+A(ESC_W)+A(ESC_E);
+function akv(k,upper,extra){var a=AREA[k],sum=0,rows=[],N={sortir:'Sortir & proses',fleks:'Area fleksibel (lonjakan, retur)',simpan:'Penyangga transit (simpan <24 jam)',akses:'Gang & jalur akses',penunjang:'Penunjang (kantor, kurir, pelatihan)'};
+  Object.keys(N).forEach(function(c){if(a[c]){sum+=a[c];rows.push([N[c],fmt(a[c])+' m² · '+Math.round(a[c]/FOOT*100)+'%']);}});
+  if(upper){sum+=VOIDA;rows.push(['Bukaan atrium & eskalator',fmt(VOIDA)+' m² · '+Math.round(VOIDA/FOOT*100)+'%']);}
+  if(extra){sum+=extra[1];rows.push([extra[0],fmt(extra[1])+' m² · '+Math.round(extra[1]/FOOT*100)+'%']);}
+  rows.push(['Sirkulasi umum & sisa',fmt(FOOT-sum)+' m² · '+Math.round((FOOT-sum)/FOOT*100)+'%']);
+  return [['Luas lantai di model','±'+fmt(FOOT)+' m²']].concat(rows);}
+
+/* ---------- Label ---------- */
+var LABELS=[
+ {t:'Gedung utama · 3 lantai · ±19.208 m²',p:[-6,22,20],s:['eksisting']},
+ {t:'Kolam renang (terbengkalai)',p:[-78,6,104],s:['eksisting']},
+ {t:'Parkir Plaza Shinta',p:[-6,4,-72],s:['eksisting']},
+ {t:'Ruko · bukan bagian aset',p:[-110,11,-6],c:'ruko',s:'*'},
+ {t:'Parkir & jalan ruko (aset)',p:[-112,3,10],s:['eksisting']},
+ {t:'SMK PGRI 109',p:[82,11,30],s:['eksisting','rombak']},
+ {t:'SMK PGRI 109 · tetap, mitra magang',p:[82,11,30],s:['tahap-1','tahap-2']},
+ {t:'Lapangan basket',p:[84,3,55],s:['eksisting','tahap-1','rombak']},
+ {t:'Tanah kosong · di luar batas aset',p:[62,3,-40],s:'*'},
+ {t:'Jl. Teuku Umar · ±10 m, dua arah',p:[120,3,-104],s:'*'},
+ {t:'Hub lantai dasar · ±'+fmt(FOOT)+' m²',p:[-6,7,20],c:'hub',s:['tahap-1']},
+ {t:'Lantai 2–3 belum dipakai',p:[-6,18,-22],s:['tahap-1']},
+ {t:'Dok van & CDD (maks. 9 m)',p:[-8,7,-54],c:'new',s:['tahap-1','tahap-2']},
+ {t:'Kolam ditutup & diamankan',p:[-78,5,104],s:['tahap-1','rombak']},
+ {t:'Hub 3 lantai · retrofit ±19.208 m²',p:[-6,18,20],c:'hub',s:['tahap-2']},
+ {t:'RTH · taman penyangga ke permukiman · ±'+fmt(PA(RTH_N))+' m²',p:[-77,9,100],c:'green',s:['tahap-2']},
+ {t:'RTH · taman resapan & istirahat kurir · ±'+fmt(PA(RTH_SE))+' m²',p:[63,9,-80],c:'green',s:['tahap-2']},
+ {t:'Lapangan rumput serbaguna · tetap untuk SMK',p:[84,1,64],c:'green',s:['tahap-2']},
+ {t:'Lift barang · di pintu timur eksisting',p:[31,17,13],s:['tahap-2']},
+ {t:'Fase 1 (2029) · 1 lantai · '+fmt(A(RB1))+' m²',p:[-6,12,30],c:'hub',s:['rombak']},
+ {t:'Fase 2 (2033) · bila fase 1 terisi ≥85% · '+fmt(A(RB2))+' m²',p:[-6,12,-46],c:'new',s:['rombak']},
+ {t:'Kios tersisa · 4 unit',p:[-37,5,18],s:['ib1']},{t:'Ruang',p:[22,5,18],s:['ib1']},{t:'Ruang',p:[18,5,-44],s:['ib1']},
+ {t:'Ruang rapat / ballroom',p:[12,6,46],s:['ib1']},{t:'Main atrium · open area',p:[-6,3,7],s:['ib1']},{t:'Eskalator',p:[-26,4,12],s:['ib1','ib2','ib3']},
+ {t:'Pintu barat',p:[-41,6,10],s:['ib1']},{t:'Pintu timur',p:[28,6,10],s:['ib1']},{t:'3 pintu besi geser',p:[-10,6,-50],c:'new',s:['ib1']},
+ {t:'Lantai kosong · bekas F&B & kios, sudah dibongkar',p:[-12,3,-28],s:['ib1']},{t:'Lantai kosong',p:[-17,3,44],s:['ib1']},
+ {t:'Ballroom / function hall',p:[-6,6,48],s:['ib2']},{t:'Bolong · melihat ke bawah',p:[-6,3,7],s:['ib2','ib3']},{t:'Bioskop',p:[18,6,-30],s:['ib2']},
+ {t:'Kios · 15 unit',p:[-36,5,14],s:['ib2']},{t:'Lantai kosong',p:[-12,3,-30],s:['ib2']},
+ {t:'Ditembok · isi belum diketahui',p:[-6,7,47],c:'ruko',s:['ib3']},{t:'Lapangan futsal',p:[-8,3,-30],s:['ib3']},{t:'Kios · 8 unit',p:[-36,5,14],s:['ib3']},
+ {t:'1 · Terima di 3 pintu besi geser',p:[-10,8,-52],c:'new',s:['ia1']},
+ {t:'2 · Sortir primer',p:[-8,4,-22],c:'hub',s:['ia1']},
+ {t:'3 · Sortir per rute (atrium)',p:[-6,5,7],c:'hub',s:['ia1']},
+ {t:'4 · Rak ambil kurir (bekas kios)',p:[-36,5,20],c:'new',s:['ia1']},
+ {t:'5 · Kurir motor keluar',p:[-47,3,3],c:'new',s:['ia1']},
+ {t:'Penyangga transit (rak)',p:[-18,6,44],c:'new',s:['ia1']},{t:'Kantor & ruang kurir (bekas ruang rapat)',p:[12,6,46],s:['ia1']},
+ {t:'Paket besar',p:[-32,4,-22],s:['ia1']},{t:'Bernilai & retur (terkunci)',p:[17,5,-22],s:['ia1']},{t:'Pos dok',p:[18,5,-44],s:['ia1']},
+ {t:'Pintu timur · staf, lobi lift Tahap 2',p:[29,7,10],s:['ia1']},{t:'Eskalator ditutup',p:[-26,4,15],s:['ia1']},
+ {t:'Sortir paket kecil (bekas ballroom)',p:[-6,4,48],c:'hub',s:['ia2']},{t:'Kantong siap turun',p:[-36,5,-4],c:'new',s:['ia2']},
+ {t:'QC & kantor shift',p:[22,5,18],s:['ia2']},{t:'Loker & istirahat kurir (bekas bioskop)',p:[18,5,-30],s:['ia2']},{t:'Penyangga ringan',p:[-12,4,-30],s:['ia2']},
+ {t:'Konveyor miring (bukaan eskalator)',p:[-26,6,17],c:'hub',s:['ia2','ia3']},{t:'Peluncur spiral',p:[14,6,10],c:'new',s:['ia2','ia3']},
+ {t:'Bukaan atrium · pagar & tirai asap',p:[-6,3,7],s:['ia2','ia3']},{t:'Lift barang',p:[29,7,13],s:['ia2','ia3']},
+ {t:'Area lonjakan musiman & retur (bekas futsal)',p:[-8,4,-30],c:'hub',s:['ia3']},{t:'Ruang tertutup · cek dulu sebelum dipakai',p:[-6,4,47],c:'ruko',s:['ia3']},
+ {t:'Teaching factory SMK',p:[-36,5,-4],s:['ia3']},{t:'Kantor mitra',p:[22,5,18],s:['ia3']},
+ {t:'K-2',p:[-6,2,0],c:'zone',z:1},{t:'K-2',p:[-110,2,36],c:'zone',z:1},{t:'K-2',p:[-110,2,-10],c:'zone',z:1},{t:'K-2',p:[-100,2,-50],c:'zone',z:1},{t:'K-2',p:[76,2,-50],c:'zone',z:1},
+ {t:'SPU',p:[82,2,50],c:'zone',z:1},{t:'Perumahan',p:[-30,2,100],c:'zone',z:1},{t:'Perumahan',p:[70,2,190],c:'zone',z:1},{t:'Perumahan',p:[170,2,60],c:'zone',z:1},{t:'Industri',p:[235,2,-78],c:'zone',z:1}
+];
+var lbRoot=document.getElementById('labels');
+LABELS.forEach(function(l){var d=document.createElement('div');d.className='lb'+(l.c?' '+l.c:'');d.textContent=l.t;lbRoot.appendChild(d);l.el=d;l.v=new THREE.Vector3(l.p[0],l.p[1],-l.p[2]);});
+
+/* ---------- Panel info ---------- */
+var INFO={
+ 'eksisting':{eb:'Kondisi 2026',h:'Mal tiga lantai yang nyaris kosong',
+  d:'Gedung utama, kolam, dan parkir dikelilingi ruko yang bukan bagian aset. Jalan dan parkir di sekitar ruko tetap milik aset.',
+  kv:[['Luas tanah','34.753 m²'],['Luas bangunan','23.758 m²'],['Gedung utama','±19.208 m² · 3 lt'],['Kondisi','73,50% rusak berat','bad'],['Nilai sisa bangunan','36%'],['Zona RDTR','K-2 · KDB 60% · KLB 6,6'],['Legalitas','SHP a.n. Pemerintah RI']],
+  n:[['find','Pada foto udara kasus, tanah kosong di timur berada di luar garis batas aset. Lahan terbuka milik aset hanya plaza selatan, lahan kolam, dan jalan di sekitar ruko.'],['','Nyalakan lapisan Zonasi RDTR: lahan kolam jatuh di zona perumahan, sedangkan SMK di zona SPU.']]},
+ 'tahap-1':{eb:'Tahap 1 · Sewa Guna 5 tahun · 2027–2031',h:'Hub antar terakhir di lantai dasar',
+  d:'Modal kecil, tanpa bongkar. Lantai dasar jadi area sortir dan titik antar. Dok menghadap selatan ke Jl. Teuku Umar, menjauhi perumahan di utara.',
+  kv:[['Luas hub (lantai dasar)','±6.400 m²'],['Luas sewa bersih','5.442 m²'],['Capex mitra','±Rp5,2 miliar'],['Sewa setara 0,5% (dasar ⅓ aset)','Rp0,35 miliar/thn'],['IRR mitra @sewa 0,5%','15,4%','good'],['NPV mitra @WACC 9,66%','+Rp0,5 miliar','good'],['Batas layak sewa','±0,74%']],
+  n:[['','Kendaraan dibatasi van, CDE, dan CDD (panjang ≤9 m). Tidak ada kontainer.'],['','SMK tetap di tempat dan menjadi mitra magang.'],['find','Site visit Nov 2026: penyewa F&B dan tekstil sudah direlokasi keluar dan sebagian besar kios sudah dibongkar, jadi tidak perlu kios relokasi di plaza.'],['warn','Spesifikasi gedung sudah sesuai SNI toko. Uji 2027 tinggal memastikan kondisi fisik aktual sebelum masuk Tahap 2.']]},
+ 'tahap-2':{eb:'Tahap 2 · KSPd 30 tahun · 2032–2061',h:'Retrofit tiga lantai, tanpa annex, lahan sisa jadi RTH',
+  d:'Seluruh gedung jadi hub: barang berat di lantai dasar, sortir paket dan barang ringan di lantai 2–3 lewat lift barang. Lahan yang dulu dicadangkan untuk annex dijadikan ruang terbuka hijau untuk memenuhi KDH 15%.',
+  kv:[['Retrofit gedung utama','19.208 m²'],['RTH (target KDH 15% = 5.213 m²)','±'+fmt(RTH_AREA)+' m² · ±'+(RTH_AREA/34753*100).toFixed(1).replace('.',',')+'%','good'],['Capex mitra (termasuk RTH, tanpa perkuatan)','±Rp57,1 miliar'],['Imbal hasil tetap 0,3% + variabel 5%','Rp0,63 miliar/thn + 5% pendapatan'],['IRR mitra','12,9%','good'],['NPV mitra @WACC 9,66%','+Rp10,5 miliar','good'],['NPV uji stres @11,21%','+Rp4,4 miliar','good'],['Batas layak imbal hasil tetap','±1,3%']],
+  n:[['','RTH: bekas kolam jadi taman berpohon yang meredam kebisingan ke permukiman utara; sudut tenggara jadi taman resapan; lapangan basket jadi lapangan rumput yang tetap dipakai SMK.'],['find','Annex dihapus: lahan kolam berzona perumahan, dan annex akan memakai lahan yang dibutuhkan untuk KDH 15%.'],['warn','Angka KDH 15% dan luas RTH perlu dicek ke tabel RDTR dan gambar tapak resmi; luas di model diukur dari foto udara (±15%).'],['','Lantai 2–3 hanya untuk kegiatan ringan agar tetap di bawah beban rencana toko (SNI); rak berat di lantai 1.'],['warn','Plaza selatan sengaja dikosongkan untuk manuver van dan CDD.']]},
+ 'rombak':{eb:'Skenario rombak · KSPd 2028–2057',h:'Bongkar total, bangun hub satu lantai bertahap',
+  d:'Cadangan bila kondisi fisik aktual gagal uji. Spesifikasi gedung sudah dikonfirmasi sesuai SNI toko, sehingga skenario ini kecil kemungkinannya. Fase 1 dibangun 2029; fase 2 baru dibangun bila fase 1 terisi.',
+  kv:[['Biaya bongkar (asumsi)','±Rp12,6 miliar'],['Fase 1 · 2029','5.500 m² · ±Rp42 miliar'],['Fase 2 · 2033','5.500 m² · ±Rp48 miliar'],['Capex total','±Rp102,5 miliar'],['IRR mitra @sewa pasar','4,1%','bad'],['IRR bila 4 syarat terpenuhi','10,6%'],['KT yang disarankan','0,2–0,3%']],
+  n:[['find','Dua fase satu lantai (±'+fmt(A(RB1)+A(RB2))+' m² di model) menghabiskan blok gedung dan plaza selatan. Halaman manuver nyaris tidak tersisa, jadi fase 2 kemungkinan harus bertingkat.'],['warn','Rombak hanya mendekati layak bila bangunan murah, lahan terpakai penuh, sewa setara Jabodetabek, dan biaya bongkar tidak dibebankan ke mitra.'],['','Garis putus-putus merah di tanah menunjukkan tapak gedung lama.']]}
+};
+var SRC='Denah dari sketsa site visit tim (November 2026), diskalakan ke massa gedung dari foto udara. Ukuran ruang, jumlah kios, dan letak pintu bersifat perkiraan; belum ada gambar terukur.';
+var IDISC='Ilustratif, bukan gambar teknis. Tata letak dari sketsa site visit, dimensi mengikuti massa model (±'+fmt(FOOT)+' m² per lantai; data kasus ±6.403 m²). Tata ruang hub adalah usulan tim dan perlu diuji operator serta kajian struktur.';
+INFO.ib1={eb:'Interior sebelum · Lantai 1 · site visit Nov 2026',h:'Sebagian besar kios sudah dibongkar',d:SRC,disc:IDISC,
+  kv:[['Luas lantai di model','±'+fmt(FOOT)+' m²'],['Kios tersisa','4 unit (dinding barat)'],['Kios F&B, tekstil, food court','sudah dibongkar & direlokasi','good'],['Ruangan','2 (timur, tenggara)'],['Ruang rapat / ballroom','±'+fmt(A(RR1))+' m²'],['Main atrium (open area)','±'+fmt(A(ATR))+' m²'],['Pintu','barat, timur, 3 pintu besi geser di selatan']],
+  n:[['find','Penyewa F&B dan tekstil sudah direlokasi keluar dan kiosnya dibongkar. Blok selatan kini lantai kosong, jadi pekerjaan bongkar dan relokasi di Tahap 1 jauh berkurang.'],['find','Tiga pintu besi geser di dinding selatan menghadap plaza parkir: calon pintu dok tanpa membuat bukaan baru.'],['','Koreksi dari model sebelumnya: gedung berbentuk kotak yang sedikit mengembang di bagian atrium, ballroom ada di utara, atrium di tengah gedung, dan pintu samping berada di level atrium.'],['warn','Lebar dan tinggi bersih pintu besi geser belum diukur. Van dan CDD butuh bukaan ±3 m [DATA NEEDED].']]};
+INFO.ib2={eb:'Interior sebelum · Lantai 2 · site visit Nov 2026',h:'Ballroom di utara, bioskop di tenggara',d:SRC,disc:IDISC,
+  kv:[['Luas lantai di model','±'+fmt(FOOT)+' m²'],['Kios','15 unit (5 barat, 4 timur, 6 di sudut)'],['Ballroom / function hall','±'+fmt(A(BALL))+' m²'],['Bioskop','±'+fmt(A(BIO))+' m²'],['Bukaan atrium','±'+fmt(A(ATR))+' m²']],
+  n:[['','Ballroom berbentang lebar di utara; koridor dan kios mengelilingi bukaan atrium.'],['warn','Bioskop biasanya berlantai berundak. Bila dipakai ulang, lantainya perlu diratakan; biayanya belum ada di model [DATA NEEDED].']]};
+INFO.ib3={eb:'Interior sebelum · Lantai 3 · site visit Nov 2026',h:'Futsal di selatan, sisi utara ditembok',d:SRC,disc:IDISC,
+  kv:[['Luas lantai di model','±'+fmt(FOOT)+' m²'],['Kios','8 unit (4 barat, 4 timur)'],['Ruang ditembok (utara)','±'+fmt(A(WALLED))+' m²','bad'],['Lapangan futsal','±'+fmt(A(FUT))+' m²'],['Bukaan atrium','±'+fmt(A(ATR))+' m²']],
+  n:[['','Lapangan futsal berbentang lebar di blok selatan.'],['warn','Sisi utara ditembok dan isinya belum diketahui. Perlu dibuka dan dicek (kebocoran, beban, instalasi) sebelum dirancang.']]};
+INFO.ia1={eb:'Sesudah · Lantai 1 · sejak Tahap 1',h:'Alur satu arah: selatan masuk, barat keluar',d:'Paket masuk lewat tiga pintu besi geser di selatan, disortir dua kali sambil bergerak ke utara, lalu diambil kurir motor di pintu barat. Lantai utara menjadi penyangga transit dan kantor.',disc:IDISC,
+  kv:akv('ia1'),
+  n:[['find','Pekerjaan bongkar tinggal 4 kios dan sekat ruang kecil, karena kios F&B dan tekstil sudah dibongkar pengelola. Semua nonstruktural, sesuai batas Sewa Guna.'],['','Pintu besi geser dipakai langsung sebagai pintu dok; ruang rapat timur laut dipakai ulang menjadi kantor dan ruang kurir.'],['','Rak penyangga dan barang berat hanya di lantai 1. Lantai dasar paling kuat dan dekat dok.'],['warn','Simpan di sini berarti penyangga transit kurang dari 24 jam, bukan stok penjual, agar kegiatan tetap aktivitas kurir (KBLI 53201).'],['warn','Pintu timur untuk staf, lalu menjadi lobi lift barang di Tahap 2.']]};
+INFO.ia2={eb:'Interior sesudah · Lantai 2 · Tahap 2',h:'Sortir paket kecil di bekas ballroom',d:'Paket ringan naik lewat konveyor miring di bukaan eskalator barat, disortir di bekas ballroom, dikantongi per rute, lalu turun lewat peluncur spiral atau lift barang.',disc:IDISC,
+  kv:akv('ia2',true),
+  n:[['find','Spesifikasi gedung sesuai SNI untuk toko (beban hidup lantai atas 3,59 kN/m²). Lantai 2–3 sengaja hanya untuk kegiatan ringan: sortir paket kecil, kantong, kantor, istirahat. Rak gudang (6,00 kN/m²) tetap di lantai 1, sehingga perkuatan struktur bisa dihindari.'],['','Bukaan eskalator yang sudah ada dipakai untuk konveyor dan peluncur, jadi tidak perlu melubangi pelat lantai baru.'],['warn','Batas beban per zona tetap perlu dikonfirmasi ahli struktur, termasuk beban konveyor dan tumpukan kantong.'],['warn','Bekas bioskop perlu diratakan sebelum dipakai [DATA NEEDED: biaya].']]};
+INFO.ia3={eb:'Interior sesudah · Lantai 3 · Tahap 2',h:'Cadangan lonjakan, retur, dan pelatihan',d:'Lantai teratas menampung kegiatan yang paling ringan dan paling jarang: tambahan kapasitas saat musim puncak, pemrosesan retur, kantor, serta teaching factory SMK PGRI 109.',disc:IDISC,
+  kv:akv('ia3',true,['Ruang tertutup (belum dirancang)',A(WALLED)]),
+  n:[['','Bekas lapangan futsal berbentang lebar dibiarkan lapang agar bisa diatur ulang saat Harbolnas atau Ramadan.'],['','Bekas kios barat menjadi teaching factory dan pelatihan kurir.'],['warn','Ruang tertutup di utara baru dirancang setelah dibuka dan dicek.'],['warn','Sama dengan Lantai 2: beban dijaga di bawah batas SNI toko.']]};
+var right=document.getElementById('right');
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function renderInfo(k){var i=INFO[k];
+  right.innerHTML='<div><div class="eyebrow">'+esc(i.eb)+'</div><h2>'+esc(i.h)+'</h2></div><p>'+esc(i.d)+'</p>'+
+   '<dl class="kv">'+i.kv.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd class="'+(r[2]||'')+'">'+esc(r[1])+'</dd>';}).join('')+'</dl>'+
+   '<div class="notes">'+i.n.map(function(n){return '<div class="note '+n[0]+'">'+esc(n[1])+'</div>';}).join('')+'</div>'+
+   '<p class="disc">'+(i.disc?esc(i.disc):'Ilustratif, bukan gambar teknis. Batas aset dan bentuk gedung dibaca dari foto udara di berkas kasus; zonasi dari peta RDTR Kota Tangerang; luas dari data kasus. Angka Tahap 1–2 dari model Excel (Nov 2026, WACC 9,66%); skenario rombak dari Brief Tim.')+'</p>';
+}
+var LEG={
+ 'eksisting':[[0xb8b2a8,'Gedung utama'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109'],[0x3fb3c9,'Kolam renang'],[0xd4a400,'Batas aset'],[0xb7c9a3,'Tanah kosong (luar aset)']],
+ 'tahap-1':[[0x0e7c7b,'Hub logistik'],[0xcfd4d2,'Belum dipakai'],[0xd99a1c,'Dok bongkar muat'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']],
+ 'tahap-2':[[0x0e7c7b,'Hub lantai dasar'],[0x2f9c96,'Hub lantai 2–3'],[0x7fb069,'Ruang terbuka hijau'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']],
+ 'rombak':[[0x0e7c7b,'Hub fase 1'],[0xd99a1c,'Hub fase 2 (opsional)'],[0x7d3f3a,'Tapak gedung lama'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']]
+};
+var LB=[[0xd9c9a8,'Kios tersisa'],[0xc9c2b5,'Ruangan'],[0xb59ac2,'Ruang rapat / ballroom'],[0xece6d6,'Lantai kosong (sudah dibongkar)'],[0xdfe4e1,'Atrium'],[0x4a5356,'Bukaan lantai'],[0x6d7578,'Eskalator'],[0x56636a,'Pintu besi geser'],[0x8a4f5c,'Bioskop'],[0x7fb069,'Lapangan futsal'],[0x9aa0a0,'Ruang ditembok']];
+var LA=[[0x9fd3cf,'Sortir & proses'],[0xf0c987,'Penyangga transit'],[0xf7e9a8,'Gang & akses'],[0xc3cde6,'Penunjang'],[0xd7c3e0,'Area fleksibel'],[0x0e7c7b,'Konveyor'],[0xd99a1c,'Roll cage / dok'],[0xb5772a,'Rak']];
+['ib1','ib2','ib3'].forEach(function(k){LEG[k]=LB;});['ia1','ia2','ia3'].forEach(function(k){LEG[k]=LA;});
+var ZLEG=Object.keys(ZINFO).map(function(k){return [ZINFO[k].c,ZINFO[k].n];});
+function hex(c){return '#'+('000000'+c.toString(16)).slice(-6);}
+function renderLegend(){var a=LEG[cur].concat(gZones.visible?ZLEG:[]);document.getElementById('legend').innerHTML=a.map(function(r){return '<span><i style="background:'+hex(r[0])+'"></i>'+esc(r[1])+'</span>';}).join('');}
+
+var cur='eksisting', mode='eksisting', floor=1, showLabels=true;
+function isInt(){return mode==='int-before'||mode==='int-after';}
+function setScenario(k,fromHash){var was=isInt(), m=/^(int-before|int-after)(?:-([123]))?$/.exec(k||'');
+  if(m){mode=m[1];if(m[2])floor=+m[2];}else{if(!S[k]||/^i[ab]\d$/.test(k))k='eksisting';mode=k;}
+  cur=isInt()?(mode==='int-before'?'ib':'ia')+floor:mode;
+  Object.keys(S).forEach(function(n){S[n].visible=(n===cur);});
+  document.querySelectorAll('.tab').forEach(function(b){b.setAttribute('aria-selected',b.dataset.s===mode?'true':'false');});
+  document.getElementById('floors').style.display=isInt()?'':'none';
+  document.querySelectorAll('.fl').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.f===floor?'true':'false');});
+  renderInfo(cur);renderLegend();
+  if(isInt()!==was){if(isInt())view(-0.42,0.62,235,-6,-4);else view(-0.5,0.9,470,-15,-5);}
+  var h=mode+(isInt()?'-'+floor:'');
+  if(!fromHash){try{if(location.hash!=='#'+h)location.hash=h;}catch(e){}}
+}
+document.querySelectorAll('.tab').forEach(function(b){b.addEventListener('click',function(){setScenario(b.dataset.s);});});
+document.querySelectorAll('.fl').forEach(function(b){b.addEventListener('click',function(){setScenario(mode+'-'+b.dataset.f);});});
+window.addEventListener('hashchange',function(){setScenario(location.hash.slice(1),true);});
+function toggle(id,fn){var b=document.getElementById(id);b.addEventListener('click',function(){var on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on?'true':'false');fn(on);});}
+toggle('t-labels',function(on){showLabels=on;});
+toggle('t-zones',function(on){gZones.visible=on;renderLegend();});
+toggle('t-boundary',function(on){gBoundary.visible=gBoundary2.visible=on;});
+toggle('t-context',function(on){gContext.visible=on;});
+
+/* ---------- Kamera orbit sederhana ---------- */
+var tgt=new THREE.Vector3(-15,0,-5), sph={r:470,th:-0.5,ph:0.9}, goal=null;
+function applyCam(){sph.ph=Math.max(0.02,Math.min(1.5,sph.ph));sph.r=Math.max(60,Math.min(900,sph.r));
+  camera.position.set(tgt.x+sph.r*Math.sin(sph.ph)*Math.sin(sph.th),tgt.y+sph.r*Math.cos(sph.ph),tgt.z+sph.r*Math.sin(sph.ph)*Math.cos(sph.th));camera.lookAt(tgt);
+  document.getElementById('needle').setAttribute('transform','rotate('+(sph.th*180/Math.PI)+' 22 22)');}
+function view(th,ph,r,tx,tz){goal={th:th,ph:ph,r:r,x:tx,z:tz};}
+document.getElementById('v-persp').onclick=function(){isInt()?view(-0.42,0.62,235,-6,-4):view(-0.5,0.9,470,-15,-5);};
+document.getElementById('v-top').onclick=function(){isInt()?view(0,0.02,250,-6,-4):view(0,0.02,560,-25,-15);};
+document.getElementById('v-south').onclick=function(){view(0.08,1.2,380,-5,-10);};
+var ptrs={}, last=null, pinch=0;
+stage.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('.panel'))return;stage.setPointerCapture(e.pointerId);ptrs[e.pointerId]={x:e.clientX,y:e.clientY};last={x:e.clientX,y:e.clientY};goal=null;stage.classList.add('drag');});
+stage.addEventListener('pointermove',function(e){if(!ptrs[e.pointerId])return;ptrs[e.pointerId]={x:e.clientX,y:e.clientY};var ids=Object.keys(ptrs);
+  if(ids.length===2){var a=ptrs[ids[0]],b=ptrs[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;if(pinch){sph.r*=pinch/d;pan(mx-last.x,my-last.y);}pinch=d;last={x:mx,y:my};return;}
+  var dx=e.clientX-last.x,dy=e.clientY-last.y;last={x:e.clientX,y:e.clientY};
+  if(e.shiftKey||e.buttons===2){pan(dx,dy);}else{sph.th-=dx*0.006;sph.ph-=dy*0.005;}});
+function up(e){delete ptrs[e.pointerId];pinch=0;var ids=Object.keys(ptrs);if(ids.length===1)last={x:ptrs[ids[0]].x,y:ptrs[ids[0]].y};if(!ids.length)stage.classList.remove('drag');}
+stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);
+stage.addEventListener('contextmenu',function(e){e.preventDefault();});
+stage.addEventListener('wheel',function(e){e.preventDefault();goal=null;sph.r*=Math.exp(e.deltaY*0.0012);},{passive:false});
+function pan(dx,dy){var k=sph.r*0.0016,c=Math.cos(sph.th),s=Math.sin(sph.th);tgt.x+=(-dx*c-dy*s)*k;tgt.z+=(dx*s-dy*c)*k;tgt.x=Math.max(-300,Math.min(300,tgt.x));tgt.z=Math.max(-300,Math.min(300,tgt.z));}
+
+/* ---------- Loop ---------- */
+var W=0,H=0,v3=new THREE.Vector3();
+function resize(){var w=stage.clientWidth,h=stage.clientHeight;if(w===W&&h===H)return;W=w;H=h;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function frame(){resize();
+  if(goal){var t=0.12;sph.th+=(goal.th-sph.th)*t;sph.ph+=(goal.ph-sph.ph)*t;sph.r+=(goal.r-sph.r)*t;tgt.x+=(goal.x-tgt.x)*t;tgt.z+=(goal.z-tgt.z)*t;if(Math.abs(goal.th-sph.th)+Math.abs(goal.ph-sph.ph)<0.002&&Math.abs(goal.r-sph.r)<1)goal=null;}
+  applyCam();renderer.render(scene,camera);
+  // di layar lebar, panel menutupi sisi kiri-kanan: sembunyikan label di bawah panel
+  var wide=W>860;
+  LABELS.forEach(function(l){var on=l.z?gZones.visible:(showLabels&&(l.s==='*'||l.s.indexOf(cur)>=0));
+    if(on){v3.copy(l.v).project(camera);var x=(v3.x*0.5+0.5)*W,y=(-v3.y*0.5+0.5)*H;on=v3.z<1&&x>40&&x<W-40&&y>24&&y<H-8;if(on&&wide&&((x<340&&y<470)||x>W-370))on=false;
+      if(on){l.el.style.left=x+'px';l.el.style.top=(y-(l.z?0:10))+'px';}}
+    l.el.style.display=on?'block':'none';});
+  requestAnimationFrame(frame);
+}
+setScenario((location.hash||'').slice(1)||'eksisting',true);
+frame();
+})();
+</script>
+</body>
+</html>
