@@ -442,7 +442,7 @@ var LABELS=[
  {t:'Lantai 2–3 belum dipakai',p:[-6,18,-22],s:['tahap-1']},
  {t:'Dok van & CDD (maks. 9 m)',p:[-8,7,-54],c:'new',s:['tahap-1','tahap-2']},
  {t:'Kolam ditutup & diamankan',p:[-78,5,104],s:['tahap-1','rombak']},
- {t:'Hub 3 lantai · retrofit ±19.208 m²',p:[-6,18,20],c:'hub',s:['tahap-2']},
+ {t:'Pusat distribusi ritel 3 lantai · retrofit ±19.208 m²',p:[-6,18,20],c:'hub',s:['tahap-2']},
  {t:'RTH · taman penyangga ke permukiman · ±'+fmt(PA(RTH_N))+' m²',p:[-77,9,100],c:'green',s:['tahap-2']},
  {t:'RTH · taman resapan & istirahat kurir · ±'+fmt(PA(RTH_SE))+' m²',p:[63,9,-80],c:'green',s:['tahap-2']},
  {t:'Lapangan rumput serbaguna · tetap untuk SMK',p:[84,1,64],c:'green',s:['tahap-2']},
@@ -464,12 +464,12 @@ var LABELS=[
  {t:'Penyangga transit (rak)',p:[-18,6,44],c:'new',s:['ia1']},{t:'Kantor & ruang kurir (bekas ruang rapat)',p:[12,6,46],s:['ia1']},
  {t:'Paket besar',p:[-32,4,-22],s:['ia1']},{t:'Bernilai & retur (terkunci)',p:[17,5,-22],s:['ia1']},{t:'Pos dok',p:[18,5,-44],s:['ia1']},
  {t:'Pintu timur · staf, lobi lift Tahap 2',p:[29,7,10],s:['ia1']},{t:'Eskalator ditutup',p:[-26,4,15],s:['ia1']},
- {t:'Sortir paket kecil (bekas ballroom)',p:[-6,4,48],c:'hub',s:['ia2']},{t:'Kantong siap turun',p:[-36,5,-4],c:'new',s:['ia2']},
- {t:'QC & kantor shift',p:[22,5,18],s:['ia2']},{t:'Loker & istirahat kurir (bekas bioskop)',p:[18,5,-30],s:['ia2']},{t:'Penyangga ringan',p:[-12,4,-30],s:['ia2']},
+ {t:'Stok prinsipal barang ringan (bekas ballroom)',p:[-6,4,48],c:'hub',s:['ia2']},{t:'Pesanan toko siap turun',p:[-36,5,-4],c:'new',s:['ia2']},
+ {t:'Kantor penyewa',p:[20,5,26],s:['ia2']},{t:'Pengemasan & retur (bekas bioskop)',p:[18,5,-30],s:['ia2']},{t:'Rak rendah barang ringan',p:[-12,4,-30],s:['ia2']},
  {t:'Konveyor miring (bukaan eskalator)',p:[-26,6,17],c:'hub',s:['ia2','ia3']},{t:'Peluncur spiral',p:[14,6,10],c:'new',s:['ia2','ia3']},
  {t:'Bukaan atrium · pagar & tirai asap',p:[-6,3,7],s:['ia2','ia3']},{t:'Lift barang',p:[29,7,13],s:['ia2','ia3']},
- {t:'Area lonjakan musiman & retur (bekas futsal)',p:[-8,4,-30],c:'hub',s:['ia3']},{t:'Ruang tertutup · cek dulu sebelum dipakai',p:[-6,4,47],c:'ruko',s:['ia3']},
- {t:'Teaching factory SMK',p:[-36,5,-4],s:['ia3']},{t:'Kantor mitra',p:[22,5,18],s:['ia3']},
+ {t:'Gudang bersama UMKM & seller (bekas futsal)',p:[-8,4,-30],c:'hub',s:['ia3']},{t:'Ruang tertutup · cek dulu sebelum dipakai',p:[-6,4,47],c:'ruko',s:['ia3']},
+ {t:'Teaching factory SMK',p:[-36,5,-4],s:['ia3']},{t:'Layanan penunjang · label & bundling',p:[22,5,18],s:['ia3']},
  {t:'K-2',p:[-6,2,0],c:'zone',z:1},{t:'K-2',p:[-110,2,36],c:'zone',z:1},{t:'K-2',p:[-110,2,-10],c:'zone',z:1},{t:'K-2',p:[-100,2,-50],c:'zone',z:1},{t:'K-2',p:[76,2,-50],c:'zone',z:1},
  {t:'SPU',p:[82,2,50],c:'zone',z:1},{t:'Perumahan',p:[-30,2,100],c:'zone',z:1},{t:'Perumahan',p:[70,2,190],c:'zone',z:1},{t:'Perumahan',p:[170,2,60],c:'zone',z:1},{t:'Industri',p:[235,2,-78],c:'zone',z:1}
 ];
@@ -486,10 +486,10 @@ var INFO={
   d:'Modal kecil, tanpa bongkar. Lantai dasar jadi area sortir dan titik antar. Dok menghadap selatan ke Jl. Teuku Umar, menjauhi perumahan di utara.',
   kv:[['Luas hub (lantai dasar)','±6.400 m²'],['Luas sewa bersih','5.442 m²'],['Capex mitra','±Rp5,2 miliar'],['Sewa setara 0,5% (dasar ⅓ aset)','Rp0,35 miliar/thn'],['IRR mitra @sewa 0,5%','15,4%','good'],['NPV mitra @WACC 9,66%','+Rp0,5 miliar','good'],['Batas layak sewa','±0,74%']],
   n:[['','Kendaraan dibatasi van, CDE, dan CDD (panjang ≤9 m). Tidak ada kontainer.'],['','SMK tetap di tempat dan menjadi mitra magang.'],['find','Site visit Nov 2026: penyewa F&B dan tekstil sudah direlokasi keluar dan sebagian besar kios sudah dibongkar, jadi tidak perlu kios relokasi di plaza.'],['warn','Spesifikasi gedung sudah sesuai SNI toko. Uji 2027 tinggal memastikan kondisi fisik aktual sebelum masuk Tahap 2.']]},
- 'tahap-2':{eb:'Tahap 2 · KSPd 30 tahun · 2032–2061',h:'Retrofit tiga lantai, tanpa annex, lahan sisa jadi RTH',
-  d:'Seluruh gedung jadi hub: barang berat di lantai dasar, sortir paket dan barang ringan di lantai 2–3 lewat lift barang. Lahan yang dulu dicadangkan untuk annex dijadikan ruang terbuka hijau untuk memenuhi KDH 15%.',
+ 'tahap-2':{eb:'Tahap 2 · KSPd 30 tahun · 2032–2061',h:'Pusat distribusi ritel tiga lantai, tanpa annex, lahan sisa jadi RTH',
+  d:'Hub paket diperluas menjadi pusat distribusi barang ritel: lantai dasar untuk sortir paket (±40%) dan cross-dock distributor (±60%), lantai 2 untuk stok prinsipal barang ringan, lantai 3 untuk gudang bersama UMKM dan layanan penunjang. Lahan yang dulu dicadangkan untuk annex dijadikan ruang terbuka hijau untuk memenuhi KDH 15%.',
   kv:[['Retrofit gedung utama','19.208 m²'],['RTH (target KDH 15% = 5.213 m²)','±'+fmt(RTH_AREA)+' m² · ±'+(RTH_AREA/34753*100).toFixed(1).replace('.',',')+'%','good'],['Capex mitra (termasuk RTH, tanpa perkuatan)','±Rp57,1 miliar'],['Imbal hasil tetap 0,3% + variabel 5%','Rp0,63 miliar/thn + 5% pendapatan'],['IRR mitra','12,9%','good'],['NPV mitra @WACC 9,66%','+Rp10,5 miliar','good'],['NPV uji stres @11,21%','+Rp4,4 miliar','good'],['Batas layak imbal hasil tetap','±1,3%']],
-  n:[['','RTH: bekas kolam jadi taman berpohon yang meredam kebisingan ke permukiman utara; sudut tenggara jadi taman resapan; lapangan basket jadi lapangan rumput yang tetap dipakai SMK.'],['find','Annex dihapus: lahan kolam berzona perumahan, dan annex akan memakai lahan yang dibutuhkan untuk KDH 15%.'],['warn','Angka KDH 15% dan luas RTH perlu dicek ke tabel RDTR dan gambar tapak resmi; luas di model diukur dari foto udara (±15%).'],['','Lantai 2–3 hanya untuk kegiatan ringan agar tetap di bawah beban rencana toko (SNI); rak berat di lantai 1.'],['warn','Plaza selatan sengaja dikosongkan untuk manuver van dan CDD.']]},
+  n:[['','RTH: bekas kolam jadi taman berpohon yang meredam kebisingan ke permukiman utara; sudut tenggara jadi taman resapan; lapangan basket jadi lapangan rumput yang tetap dipakai SMK.'],['find','Annex dihapus: lahan kolam berzona perumahan, dan annex akan memakai lahan yang dibutuhkan untuk KDH 15%.'],['warn','Angka KDH 15% dan luas RTH perlu dicek ke tabel RDTR dan gambar tapak resmi; luas di model diukur dari foto udara (±15%).'],['','Lantai 2–3 hanya untuk barang ritel ringan agar tetap di bawah beban rencana toko (SNI); barang berat dan rak tinggi di lantai 1.'],['find','Kegiatan utama perdagangan besar (pemilik barang ±73% luas); sortir kurir dan fulfillment pihak ketiga sebagai penunjang. Barang ritel saja, tanpa B3 dan barang curah.'],['warn','Plaza selatan sengaja dikosongkan untuk manuver van dan CDD.']]},
  'rombak':{eb:'Skenario rombak · KSPd 2028–2057',h:'Bongkar total, bangun hub satu lantai bertahap',
   d:'Cadangan bila kondisi fisik aktual gagal uji. Spesifikasi gedung sudah dikonfirmasi sesuai SNI toko, sehingga skenario ini kecil kemungkinannya. Fase 1 dibangun 2029; fase 2 baru dibangun bila fase 1 terisi.',
   kv:[['Biaya bongkar (asumsi)','±Rp12,6 miliar'],['Fase 1 · 2029','5.500 m² · ±Rp42 miliar'],['Fase 2 · 2033','5.500 m² · ±Rp48 miliar'],['Capex total','±Rp102,5 miliar'],['IRR mitra @sewa pasar','4,1%','bad'],['IRR bila 4 syarat terpenuhi','10,6%'],['KT yang disarankan','0,2–0,3%']],
@@ -509,12 +509,12 @@ INFO.ib3={eb:'Interior sebelum · Lantai 3 · site visit Nov 2026',h:'Futsal di 
 INFO.ia1={eb:'Sesudah · Lantai 1 · sejak Tahap 1',h:'Alur satu arah: selatan masuk, barat keluar',d:'Paket masuk lewat tiga pintu besi geser di selatan, disortir dua kali sambil bergerak ke utara, lalu diambil kurir motor di pintu barat. Lantai utara menjadi penyangga transit dan kantor.',disc:IDISC,
   kv:akv('ia1'),
   n:[['find','Pekerjaan bongkar tinggal 4 kios dan sekat ruang kecil, karena kios F&B dan tekstil sudah dibongkar pengelola. Semua nonstruktural, sesuai batas Sewa Guna.'],['','Pintu besi geser dipakai langsung sebagai pintu dok; ruang rapat timur laut dipakai ulang menjadi kantor dan ruang kurir.'],['','Rak penyangga dan barang berat hanya di lantai 1. Lantai dasar paling kuat dan dekat dok.'],['warn','Simpan di sini berarti penyangga transit kurang dari 24 jam, bukan stok penjual, agar kegiatan tetap aktivitas kurir (KBLI 53201).'],['warn','Pintu timur untuk staf, lalu menjadi lobi lift barang di Tahap 2.']]};
-INFO.ia2={eb:'Interior sesudah · Lantai 2 · Tahap 2',h:'Sortir paket kecil di bekas ballroom',d:'Paket ringan naik lewat konveyor miring di bukaan eskalator barat, disortir di bekas ballroom, dikantongi per rute, lalu turun lewat peluncur spiral atau lift barang.',disc:IDISC,
+INFO.ia2={eb:'Interior sesudah · Lantai 2 · Tahap 2',h:'Stok prinsipal barang ringan di bekas ballroom',d:'Prinsipal fesyen, kosmetik, dan elektronik kecil menyimpan stok sendiri di rak rendah. Pesanan toko dan e-commerce disiapkan di sini, lalu turun lewat peluncur spiral, konveyor, atau lift barang ke dok lantai 1.',disc:IDISC,
   kv:akv('ia2',true),
-  n:[['find','Spesifikasi gedung sesuai SNI untuk toko (beban hidup lantai atas 3,59 kN/m²). Lantai 2–3 sengaja hanya untuk kegiatan ringan: sortir paket kecil, kantong, kantor, istirahat. Rak gudang (6,00 kN/m²) tetap di lantai 1, sehingga perkuatan struktur bisa dihindari.'],['','Bukaan eskalator yang sudah ada dipakai untuk konveyor dan peluncur, jadi tidak perlu melubangi pelat lantai baru.'],['warn','Batas beban per zona tetap perlu dikonfirmasi ahli struktur, termasuk beban konveyor dan tumpukan kantong.'],['warn','Bekas bioskop perlu diratakan sebelum dipakai [DATA NEEDED: biaya].']]};
-INFO.ia3={eb:'Interior sesudah · Lantai 3 · Tahap 2',h:'Cadangan lonjakan, retur, dan pelatihan',d:'Lantai teratas menampung kegiatan yang paling ringan dan paling jarang: tambahan kapasitas saat musim puncak, pemrosesan retur, kantor, serta teaching factory SMK PGRI 109.',disc:IDISC,
+  n:[['find','Spesifikasi gedung sesuai SNI untuk toko (beban hidup lantai atas 3,59 kN/m²). Lantai 2–3 sengaja hanya untuk barang ritel ringan: stok prinsipal di rak rendah, pengemasan, kantor. Barang berat dan rak tinggi (6,00 kN/m²) tetap di lantai 1, sehingga perkuatan struktur bisa dihindari.'],['','Bukaan eskalator yang sudah ada dipakai untuk konveyor dan peluncur, jadi tidak perlu melubangi pelat lantai baru.'],['warn','Batas beban per zona tetap perlu dikonfirmasi ahli struktur, termasuk beban konveyor dan tumpukan kantong.'],['warn','Bekas bioskop perlu diratakan sebelum dipakai [DATA NEEDED: biaya].']]};
+INFO.ia3={eb:'Interior sesudah · Lantai 3 · Tahap 2',h:'Gudang bersama UMKM dan layanan penunjang',d:'Lantai teratas untuk UMKM dan seller online yang menyimpan stok sendiri, layanan penunjang (fulfillment pihak ketiga, pelabelan, bundling, retur), serta teaching factory SMK PGRI 109.',disc:IDISC,
   kv:akv('ia3',true,['Ruang tertutup (belum dirancang)',A(WALLED)]),
-  n:[['','Bekas lapangan futsal berbentang lebar dibiarkan lapang agar bisa diatur ulang saat Harbolnas atau Ramadan.'],['','Bekas kios barat menjadi teaching factory dan pelatihan kurir.'],['warn','Ruang tertutup di utara baru dirancang setelah dibuka dan dicek.'],['warn','Sama dengan Lantai 2: beban dijaga di bawah batas SNI toko.']]};
+  n:[['','Bekas lapangan futsal berbentang lebar dibagi menjadi petak sewa UMKM yang bisa diatur ulang saat Harbolnas atau Ramadan.'],['','Bekas kios barat menjadi teaching factory dan pelatihan kurir.'],['warn','Ruang tertutup di utara baru dirancang setelah dibuka dan dicek.'],['warn','Sama dengan Lantai 2: beban dijaga di bawah batas SNI toko.']]};
 var right=document.getElementById('right');
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
 function renderInfo(k){var i=INFO[k];
@@ -526,7 +526,7 @@ function renderInfo(k){var i=INFO[k];
 var LEG={
  'eksisting':[[0xb8b2a8,'Gedung utama'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109'],[0x3fb3c9,'Kolam renang'],[0xd4a400,'Batas aset'],[0xb7c9a3,'Tanah kosong (luar aset)']],
  'tahap-1':[[0x0e7c7b,'Hub logistik'],[0xcfd4d2,'Belum dipakai'],[0xd99a1c,'Dok bongkar muat'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']],
- 'tahap-2':[[0x0e7c7b,'Hub lantai dasar'],[0x2f9c96,'Hub lantai 2–3'],[0x7fb069,'Ruang terbuka hijau'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']],
+ 'tahap-2':[[0x0e7c7b,'Paket & cross-dock (lt 1)'],[0x2f9c96,'Distribusi ritel (lt 2–3)'],[0x7fb069,'Ruang terbuka hijau'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']],
  'rombak':[[0x0e7c7b,'Hub fase 1'],[0xd99a1c,'Hub fase 2 (opsional)'],[0x7d3f3a,'Tapak gedung lama'],[0xc4463a,'Ruko (bukan aset)'],[0x46699c,'SMK PGRI 109']]
 };
 var LB=[[0xd9c9a8,'Kios tersisa'],[0xc9c2b5,'Ruangan'],[0xb59ac2,'Ruang rapat / ballroom'],[0xece6d6,'Lantai kosong (sudah dibongkar)'],[0xdfe4e1,'Atrium'],[0x4a5356,'Bukaan lantai'],[0x6d7578,'Eskalator'],[0x56636a,'Pintu besi geser'],[0x8a4f5c,'Bioskop'],[0x7fb069,'Lapangan futsal'],[0x9aa0a0,'Ruang ditembok']];
